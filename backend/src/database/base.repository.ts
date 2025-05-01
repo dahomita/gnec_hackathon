@@ -4,11 +4,6 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-
-/**
- * Defines the basic shape of a Prisma model delegate (e.g., prisma.user, prisma.post)
- * Used as a constraint for generics.
- */
 export type ModelDelegate = {
     findUnique: (...args: any[]) => Promise<any>;
     findMany: (...args: any[]) => Promise<any>;
@@ -16,7 +11,7 @@ export type ModelDelegate = {
     update: (...args: any[]) => Promise<any>;
     delete: (...args: any[]) => Promise<any>;
     count: (...args: any[]) => Promise<number>;
-    // Add other common methods if needed (upsert, aggregate, etc.) with basic signatures
+
 };
 
 /**

@@ -13,8 +13,4 @@ export class UserService extends BaseService<
   constructor(protected readonly userRepository: UserRepository) {
     super(userRepository);
   }
-
-  protected getEntityName(plural = false): string {
-    return plural ? 'users' : 'user';
-  }
 }
