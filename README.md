@@ -6,7 +6,6 @@
 
 ### Prerequisites
 
-- Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows.
 - Install [Node.js](https://nodejs.org/) (LTS recommended).
 
 ### 1. Install Dependencies
@@ -27,20 +26,6 @@ npx prisma generate
 npm run start:dev
 ```
 
-### 4. Start the Database (PostgreSQL) with Docker Compose
-
-```bash
-docker compose up -d
-```
-
-### 5. Stop the Database
-
-```bash
-docker compose down
-```
-
 ---
 
-You must have Docker Desktop running before using Docker Compose commands.
-
-Other useful commands can be added below as needed.
+You do not need Docker to run or develop this project locally. All database and backend operations can be run directly with Node.js and Prisma CLI.
