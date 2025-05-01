@@ -1,21 +1,59 @@
-import { ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    InternalServerErrorException,
+    NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-export type ModelDelegate = Prisma.TypeMap['model'][keyof Prisma.TypeMap['model']];
+/**
+ * Defines the basic shape of a Prisma model delegate (e.g., prisma.user, prisma.post)
+ * Used as a constraint for generics.
+ */
+export type ModelDelegate = {
+    findUnique: (...args: any[]) => Promise<any>;
+    findMany: (...args: any[]) => Promise<any>;
+    create: (...args: any[]) => Promise<any>;
+    update: (...args: any[]) => Promise<any>;
+    delete: (...args: any[]) => Promise<any>;
+    count: (...args: any[]) => Promise<number>;
+    // Add other common methods if needed (upsert, aggregate, etc.) with basic signatures
+};
 
-type WhereUniqueInput<D extends ModelDelegate> = Prisma.Args<D, 'findUniqueOrThrow'>['where'];
-type WhereInput<D extends ModelDelegate> = Prisma.Args<D, 'findMany'>['where'];
-type OrderByInput<D extends ModelDelegate> = Prisma.Args<D, 'findMany'>['orderBy'];
-type CreateInput<D extends ModelDelegate> = Prisma.Args<D, 'create'>['data'];
-type UpdateInput<D extends ModelDelegate> = Prisma.Args<D, 'update'>['data'];
-type Include<D extends ModelDelegate> = Prisma.Args<D, 'findUniqueOrThrow'>['include'];
-type Select<D extends ModelDelegate> = Prisma.Args<D, 'findUniqueOrThrow'>['select'];
-
-export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
+/**
+ * Abstract Base Repository class providing common CRUD operations.
+ * Uses simplified parameter types (object) to avoid complex Prisma type indexing issues.
+ * Type safety for parameters like 'where', 'data', 'include', 'select' should be
+ * enforced by the caller (concrete repository or service) using specific Prisma types.
+ *
+ * @template TModel The Prisma Model type (e.g., User, Post).
+ * @template TDelegate The Prisma Delegate type (e.g., typeof prisma.user).
+ */
+export abstract class BaseRepository<
+    TModel,
+    TDelegate extends ModelDelegate
+> {
+    /**
+     * Base Repository Constructor.
+     * @param delegate - The specific Prisma model delegate (e.g., prismaService.user)
+     * provided by the concrete repository implementation.
+     */
     protected constructor(protected readonly delegate: TDelegate) { }
 
-    async findUnique(params: { where: WhereUniqueInput<TDelegate>; include?: Include<TDelegate>; select?: Select<TDelegate>; }): Promise<TModel | null> {
+    // --------------- READ OPERATIONS ---------------
+
+    /**
+     * Finds a single record based on unique criteria.
+     * @param params - Object containing 'where' criteria and optional 'include'/'select'.
+     * @returns The found entity or null if not found.
+     * @throws {InternalServerErrorException} For unexpected errors.
+     */
+    async findUnique(params: {
+        where: object;
+        include?: object;
+        select?: object;
+    }): Promise<TModel | null> {
         try {
+            // Cast delegate to 'any' for simpler method call signature compatibility
             return await (this.delegate as any).findUnique(params) as TModel | null;
         } catch (error) {
             this.logError('findUnique', error, { where: params.where });
@@ -23,7 +61,21 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
-    async findMany(params?: { skip?: number; take?: number; cursor?: WhereUniqueInput<TDelegate>; where?: WhereInput<TDelegate>; orderBy?: OrderByInput<TDelegate>; select?: Select<TDelegate>; include?: Include<TDelegate>; }): Promise<TModel[]> {
+    /**
+     * Finds multiple records based on various criteria.
+     * @param params - Optional object for filtering, pagination, ordering, selecting, and including.
+     * @returns An array of found entities.
+     * @throws {InternalServerErrorException} For unexpected errors.
+     */
+    async findMany(params?: {
+        skip?: number;
+        take?: number;
+        cursor?: object;
+        where?: object;
+        orderBy?: object | object[];
+        select?: object;
+        include?: object;
+    }): Promise<TModel[]> {
         try {
             return await (this.delegate as any).findMany(params) as TModel[];
         } catch (error) {
@@ -32,7 +84,20 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
-    async create(params: { data: CreateInput<TDelegate>; include?: Include<TDelegate>; select?: Select<TDelegate>; }): Promise<TModel> {
+    // --------------- WRITE OPERATIONS ---------------
+
+    /**
+     * Creates a new record.
+     * @param params - Object containing 'data' for creation and optional 'include'/'select'.
+     * @returns The newly created entity.
+     * @throws {ConflictException} If a unique constraint violation occurs (P2002).
+     * @throws {InternalServerErrorException} For other errors.
+     */
+    async create(params: {
+        data: object;
+        include?: object;
+        select?: object;
+    }): Promise<TModel> {
         try {
             return await (this.delegate as any).create(params) as TModel;
         } catch (error) {
@@ -44,7 +109,20 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
-    async update(params: { where: WhereUniqueInput<TDelegate>; data: UpdateInput<TDelegate>; include?: Include<TDelegate>; select?: Select<TDelegate>; }): Promise<TModel> {
+    /**
+     * Updates an existing record based on unique criteria.
+     * @param params - Object containing unique criteria 'where', 'data' for update, and optional 'include'/'select'.
+     * @returns The updated entity.
+     * @throws {NotFoundException} If the record to update is not found (P2025).
+     * @throws {ConflictException} If a unique constraint violation occurs (P2002).
+     * @throws {InternalServerErrorException} For other errors.
+     */
+    async update(params: {
+        where: object;
+        data: object;
+        include?: object;
+        select?: object;
+    }): Promise<TModel> {
         try {
             return await (this.delegate as any).update(params) as TModel;
         } catch (error) {
@@ -57,7 +135,18 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
-    async delete(params: { where: WhereUniqueInput<TDelegate>; include?: Include<TDelegate>; select?: Select<TDelegate>; }): Promise<TModel> {
+    /**
+     * Deletes an existing record based on unique criteria.
+     * @param params - Object containing unique criteria 'where' and optional 'include'/'select'.
+     * @returns The deleted entity.
+     * @throws {NotFoundException} If the record to delete is not found (P2025).
+     * @throws {InternalServerErrorException} For other errors.
+     */
+    async delete(params: {
+        where: object;
+        include?: object;
+        select?: object;
+    }): Promise<TModel> {
         try {
             return await (this.delegate as any).delete(params) as TModel;
         } catch (error) {
@@ -69,8 +158,19 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
-    async count(params?: { where?: WhereInput<TDelegate>; }): Promise<number> {
+    // --------------- AGGREGATIONS ---------------
+
+    /**
+     * Counts records based on criteria.
+     * @param params - Optional object containing 'where' criteria.
+     * @returns The number of matching records.
+     * @throws {InternalServerErrorException} For unexpected errors.
+     */
+    async count(params?: {
+        where?: object;
+    }): Promise<number> {
         try {
+            // Use 'any' cast as count might not strictly conform to simplified ModelDelegate definition
             return await (this.delegate as any).count(params);
         } catch (error) {
             this.logError('count', error, { where: params?.where });
@@ -78,11 +178,28 @@ export abstract class BaseRepository<TModel, TDelegate extends ModelDelegate> {
         }
     }
 
+    // --------------- HELPERS ---------------
+
+    /**
+     * Logs errors encountered during repository operations.
+     * Replace with a more robust logging solution (e.g., NestJS Logger) if needed.
+     */
     protected logError(message: string, error: any, context?: Record<string, unknown>): void {
-        console.error(`[${this.constructor.name}] ${message}`, { error: error?.message ?? error, code: error?.code, context });
+        console.error(`[${this.constructor.name}] ${message}`, {
+            error: error?.message ?? error,
+            code: error?.code, // Log Prisma error code if available
+            context,
+        });
     }
 
+    /**
+     * Extracts target fields from Prisma P2002 error metadata for better error messages.
+     */
     protected getTargetFields(error: any): string {
-        return error.meta?.target?.join(', ') ?? 'details unavailable';
+        // Check if meta and target exist and if target is an array
+        if (error?.meta?.target && Array.isArray(error.meta.target)) {
+            return error.meta.target.join(', ');
+        }
+        return 'details unavailable';
     }
 }
