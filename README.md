@@ -5,29 +5,39 @@
 ## Quick Start
 
 ### Prerequisites
-Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows.
-Install [Node.js](https://nodejs.org/) (LTS recommended).
 
+- Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows.
+- Install [Node.js](https://nodejs.org/) (LTS recommended).
 
 ### 1. Install Dependencies
 
+```bash
 npm install
+```
 
 ### 2. Generate Prisma Client
 
+```bash
 npx prisma generate
+```
 
 ### 3. Start the Backend in Development Mode
 
+```bash
 npm run start:dev
+```
 
 ### 4. Start the Database (PostgreSQL) with Docker Compose
 
+```bash
 docker compose up -d
+```
 
 ### 5. Stop the Database
 
+```bash
 docker compose down
+```
 
 ---
 
