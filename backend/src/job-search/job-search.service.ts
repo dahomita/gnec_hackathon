@@ -14,8 +14,9 @@ export class JobSearchService {
   }
 
   async getJobSearch() {
-    const { statusCode, body } = await request('https://api.theirstack.com/v1/jobs/search', {
-      method: 'POST',
+    try{
+      const { body } = await request('https://api.theirstack.com/v1/jobs/search', {
+        method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.apiKey}`
@@ -27,11 +28,12 @@ export class JobSearchService {
         posted_at_max_age_days: 7
       })
     });
-    if (statusCode !== 200) {
-      throw new Error('Failed to get job search');
-    }
     // Parse the response body
     const result = await body.json();
     return result;
+  } catch (error) {
+      console.error('Error fetching job search:', error);
+      throw error;
+    }
   }
 }
