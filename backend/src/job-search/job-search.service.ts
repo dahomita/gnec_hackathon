@@ -13,7 +13,7 @@ export class JobSearchService {
     this.apiKey = apiKey;
   }
 
-  async getJobSearch() {
+  async getJobSearch(jobType: Array<string>, remote: boolean, countries: Array<string>, datePosted: number) {
     try{
       const { body } = await request('https://api.theirstack.com/v1/jobs/search', {
         method: 'POST',
@@ -24,8 +24,10 @@ export class JobSearchService {
       body: JSON.stringify({
         page: 0,
         limit: 25,
-        job_country_code_or: ['US'],
-        posted_at_max_age_days: 7
+        job_country_code_or: countries,
+        posted_at_max_age_days: datePosted,
+        job_type: jobType,
+        remote: remote
       })
     });
     // Parse the response body
